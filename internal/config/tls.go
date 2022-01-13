@@ -30,7 +30,7 @@ func SetupTLSConfig(cfg TLSConfig) (*tls.Config, error) {
 		if !ok {
 			return nil, fmt.Errorf("failed to parse root certificate: %q", cfg.CAFile)
 		}
-		if cfg.Server != "" {
+		if cfg.Server {
 			tlsConfig.ClientCAs = ca
 			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 		} else {
@@ -47,5 +47,5 @@ type TLSConfig struct {
 	KeyFile       string
 	CAFile        string
 	ServerAddress string
-	Server        string
+	Server        bool
 }

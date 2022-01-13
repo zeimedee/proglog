@@ -9,6 +9,8 @@ var (
 	CAFile         = ConfigFile("ca.pem")
 	ServerCertFile = ConfigFile("server.pem")
 	ServerKeyFile  = ConfigFile("server-key.pem")
+	ClientCertFile = ConfigFile("client.pem")
+	ClientKeyFile  = ConfigFile("client-key.pem")
 )
 
 func ConfigFile(filename string) string {
