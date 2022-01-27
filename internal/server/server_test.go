@@ -8,9 +8,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	api "github.com/zeimedee/proglog/api/v1"
+	"github.com/zeimedee/proglog/internal/auth"
 	"github.com/zeimedee/proglog/internal/config"
 	"github.com/zeimedee/proglog/internal/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
@@ -25,6 +27,7 @@ func TestServer(t *testing.T) {
 		"produce/consume message to/from log succeeds": testProduceConsume,
 		"produce/consume stream succeeds":              testProduceConsumeStream,
 		"consume past log boundary fails":              testConsumePastBoundary,
+		"unauthorized fails":                           testUnauthorized,
 	} {
 		t.Run(scenario, func(t *testing.T) {
 			rootClient, nobodyClient, config, teardown := setUpTest(t, nil)
@@ -103,9 +106,12 @@ func setUpTest(t *testing.T, fn func(*Config)) (
 	clog, err := log.NewLog(dir, log.Config{})
 	require.NoError(t, err)
 
+	authorizer := auth.New(config.ACLModelFile, config.ACLPolicyFile)
 	cfg = &Config{
-		CommitLog: clog,
+		CommitLog:  clog,
+		Authorizer: authorizer,
 	}
+
 	if fn != nil {
 		fn(cfg)
 	}
@@ -207,5 +213,32 @@ func testConsumePastBoundary(t *testing.T, client, _ api.LogClient, config *Conf
 	want := status.Code(api.ErrOffsetOutOfRange{}.GRPCStatus().Err())
 	if got != want {
 		t.Fatalf("got err: %v, want: %v", got, want)
+	}
+}
+
+func testUnauthorized(t *testing.T, _, client api.LogClient, config *Config) {
+	ctx := context.Background()
+	produce, err := client.Produce(ctx, &api.ProduceRequest{
+		Record: &api.Record{
+			Value: []byte("hello world"),
+		},
+	})
+
+	if produce != nil {
+		t.Fatalf("produce response should be nil")
+	}
+	gotCode, wantCode := status.Code(err), codes.PermissionDenied
+	if gotCode != wantCode {
+		t.Fatalf("got code: %d, want code: %d", gotCode, wantCode)
+	}
+	consume, err := client.Consume(ctx, &api.ConsumeRequest{
+		Offset: 0,
+	})
+	if consume != nil {
+		t.Fatalf("consume response should be nil")
+	}
+	gotCode, wantCode = status.Code(err), codes.PermissionDenied
+	if gotCode != wantCode {
+		t.Fatalf("got code:%d, want code: %d", gotCode, wantCode)
 	}
 }
