@@ -86,8 +86,8 @@ func setUpTest(t *testing.T, fn func(*Config)) (
 
 	var nobodyConn *grpc.ClientConn
 	nobodyConn, nobodyClient, _ = newClient(
-		config.NoBodyCertFile,
-		config.NoBodyKeyFile,
+		config.NoBodyClientCertFile,
+		config.NoBodyClientKeyFile,
 	)
 
 	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
