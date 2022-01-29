@@ -29,7 +29,7 @@ gencert:
 	mv *.pem *.csr ${CONFIG_PATH}
 .PHONY: test
 test:$(CONFIG_PATH)/policy.csv $(CONFIG_PATH)/model.conf
-		go test -v -race ./...
+		go test -v -race -cover ./...
 
 .PHONY: compile			
 compile:

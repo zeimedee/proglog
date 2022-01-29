@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	api "github.com/zeimedee/proglog/api/v1"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
@@ -56,10 +58,32 @@ func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, err
 	if err != nil {
 		return nil, err
 	}
+
+	halfSampler := trace.ProbabilitySampler(0.5)
+	trace.ApplyConfig(trace.Config{
+		DefaultSampler: func(p trace.SamplingParameters) trace.SamplingDecision {
+			if strings.Contains(p.Name, "Produce") {
+				return trace.SamplingDecision{
+					Sample: true,
+				}
+			}
+			return halfSampler(p)
+		},
+	})
+
 	opts = append(opts, grpc.StreamInterceptor(
 		grpc_middleware.ChainStreamServer(
-			grpc_auth.StreamServerInterceptor(authenticate))),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(grpc_auth.UnaryServerInterceptor(authenticate))))
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(logging, zapOpts...),
+			grpc_auth.StreamServerInterceptor(authenticate),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(logging, zapOpts...),
+			grpc_auth.UnaryServerInterceptor(authenticate),
+		)),
+		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
+	)
 
 	gsrv := grpc.NewServer(opts...)
 	srv, err := newgrpcServer(config)
