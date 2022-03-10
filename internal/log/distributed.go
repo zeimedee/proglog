@@ -224,3 +224,91 @@ func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 }
 
 func (s *snapshot) Release() {}
+
+func (f *fsm) Restore(r io.ReadCloser) error {
+	b := make([]byte, lenWidth)
+	var buf bytes.Buffer
+	for i := 0; ; i++ {
+		_, err := io.ReadFull(r, b)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		size := int64(enc.Uint64(b))
+		if _, err := io.CopyN(&buf, r, size); err != nil {
+			return err
+		}
+		record := &api.Record{}
+		if err := proto.Unmarshal(buf.Bytes(), record); err != nil {
+			return err
+		}
+		if i == 0 {
+			f.log.Config.Segment.InitialOffSet = record.Offset
+			if err := f.log.Reset(); err != nil {
+				return err
+			}
+		}
+		if _, err := f.log.Append(record); err != nil {
+			return err
+		}
+		buf.Reset()
+	}
+	return nil
+}
+
+var _ raft.LogStore = (*logStore)(nil)
+
+type logStore struct {
+	*Log
+}
+
+func newLogStore(dir string, c Config) (*logStore, error) {
+	log, err := NewLog(dir, c)
+	if err != nil {
+		return nil, err
+	}
+	return &logStore{log}, nil
+}
+
+func (l *logStore) FirstIndex() (uint64, error) {
+	off, err := l.LowestOffset()
+	return off, err
+}
+
+func (l *logStore) LastIndex() (uint64, error) {
+	return l.HighestOffset()
+}
+
+func (l *logStore) GetLog(index uint64, out *raft.Log) error {
+	in, err := l.Read(index)
+	if err != nil {
+		return err
+	}
+	out.Data = in.Value
+	out.Index = in.Offset
+	out.Type = raft.LogType(in.Type)
+	out.Term = in.Term
+	return nil
+}
+
+func (l *logStore) StoreLog(record *raft.Log) error {
+	return l.StoreLogs([]*raft.Log{record})
+}
+
+func (l *logStore) StoreLogs(records []*raft.Log) error {
+	for _, record := range records {
+		if _, err := l.Append(&api.Record{
+			Value: record.Data,
+			Term:  record.Term,
+			Type:  uint32(record.Type),
+		}); err != nil {
+			return nil
+		}
+	}
+	return nil
+}
+
+func (l *logStore) DeleteRange(min, max uint64) error {
+	return l.Truncate(max)
+}
