@@ -2,7 +2,9 @@ package log
 
 import (
 	"bytes"
+	"crypto/tls"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -311,4 +313,20 @@ func (l *logStore) StoreLogs(records []*raft.Log) error {
 
 func (l *logStore) DeleteRange(min, max uint64) error {
 	return l.Truncate(max)
+}
+
+var _ raft.StreamLayer = (*StreamLayer)(nil)
+
+type StreamLayer struct {
+	ln              net.Listener
+	serverTLSConfig *tls.Config
+	peerTLSConfig   *tls.Config
+}
+
+func NewStreamLayer(ln net.Listener, serverTLSConfig, peerTLSConfig *tls.Config) *StreamLayer {
+	return &StreamLayer{
+		ln:              ln,
+		serverTLSConfig: serverTLSConfig,
+		peerTLSConfig:   peerTLSConfig,
+	}
 }

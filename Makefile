@@ -1,4 +1,5 @@
 CONFIG_PATH=/Users/v/Desktop/goProjects/proglog/certs
+BIN_PATH=$$PATH:/Users/v/go/bin
 .PHONY: init
 init:
 	mkdir -p ${CONFIG_PATH}
@@ -39,3 +40,6 @@ compile:
 				--go_opt=paths=source_relative \
 				--go-grpc_opt=paths=source_relative \
 				--proto_path=.
+
+setpath:
+		export PATH=${BIN_PATH}
