@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/soheilhy/cmux"
 	api "github.com/zeimedee/proglog/api/v1"
 	"github.com/zeimedee/proglog/internal/auth"
 	"github.com/zeimedee/proglog/internal/discovery"
@@ -20,10 +21,11 @@ import (
 type Agent struct {
 	Config
 
-	log        *log.Log
+	mux        cmux.CMux
+	log        *log.DistributedLog
 	server     *grpc.Server
 	membership *discovery.Membership
-	replicator *log.Replicator
+	// replicator *log.Replicator
 
 	shutdown     bool
 	shutdowns    chan struct{}
@@ -41,6 +43,7 @@ type Config struct {
 	StartJoinAddrs []string
 	ACLModelFile   string
 	ACLPolicyFile  string
+	Bootstrap      bool
 }
 
 func (c Config) RPCAddr() (string, error) {
@@ -58,6 +61,7 @@ func New(config Config) (*Agent, error) {
 	}
 	setup := []func() error{
 		a.setupLogger,
+		a.setupMux,
 		a.setupLog,
 		a.setupServer,
 		a.setupMembership,
@@ -68,6 +72,17 @@ func New(config Config) (*Agent, error) {
 		}
 	}
 	return a, nil
+}
+
+func (a *Agent) setuoMux() error {
+	rpcAddr := fmt.Sprintf(":%d", a.Config.RPCPort)
+
+	ln, err := net.Listen("tcp", rpcAddr)
+	if err != nil {
+		return nil
+	}
+	a.mux = cmux.New(ln)
+	return nil
 }
 
 func (a *Agent) setupLogger() error {
