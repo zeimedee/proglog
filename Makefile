@@ -1,5 +1,5 @@
-CONFIG_PATH=/Users/v/Desktop/goProjects/proglog/certs
-BIN_PATH=$$PATH:/Users/v/go/bin
+CONFIG_PATH=/Users/alexander/Desktop/goProjects/proglog/certs
+BIN_PATH=$$PATH:/Users/alexander/go/bin
 .PHONY: init
 init:
 	mkdir -p ${CONFIG_PATH}

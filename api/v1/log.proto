@@ -16,6 +16,17 @@ service Log {
     rpc Consume(ConsumeRequest) returns (ConsumeResponse) {}
     rpc ConsumeStream(ConsumeRequest) returns (stream ConsumeResponse) {}
     rpc ProduceStream(stream ProduceRequest) returns (stream ProduceResponse) {}
+    rpc GetServers(GetServerRequest) returns (GetServerResponse){}
+}
+
+message GetServerRequest{}
+message GetServerResponse{
+    repeated Server servers = 1;
+}
+message Server {
+    string id = 1;
+    string rpc_addr = 2;
+    bool is_leader = 3;
 }
 
 message ProduceRequest{
