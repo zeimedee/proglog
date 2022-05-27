@@ -57,3 +57,9 @@ func (p *Picker) nextFollower() balancer.SubConn {
 	idx := int(cur % len)
 	return p.followers[idx]
 }
+
+func init() {
+	balancer.Register(
+		base.NewBalancerBuilder(Name, &Picker{}, base.Config{}),
+	)
+}

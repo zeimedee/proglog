@@ -7,11 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 	api "github.com/zeimedee/proglog/api/v1"
 	"github.com/zeimedee/proglog/internal/config"
+	"github.com/zeimedee/proglog/internal/loadbalance"
 	"github.com/zeimedee/proglog/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/serviceconfig"
 )
 
 func TestResolve(t *testing.T) {
