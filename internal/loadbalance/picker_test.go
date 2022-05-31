@@ -5,7 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/zeimedee/proglog/internal/loadbalance"
+	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -48,8 +50,32 @@ func TestPickerConsumesFromFollowers(t *testing.T) {
 	}
 }
 
-func setupTest() (*loadbalance.Picker, []*subConn) {}
+func setupTest() (*loadbalance.Picker, []*subConn) {
+	var subConns []*subConn
+	buildInfo := base.PickerBuildInfo{
+		ReadySCs: make(map[balancer.SubConn]base.SubConnInfo),
+	}
+	for i := 0; i < 3; i++ {
+		sc := &subConn{}
+		addr := resolver.Address{
+			Attributes: attributes.New("is_leader", i == 0),
+		}
+		//0th sub conn us the leader
+		sc.UpdateAddresses([]resolver.Address{addr})
+		buildInfo.ReadySCs[sc] = base.SubConnInfo{Address: addr}
+		subConns = append(subConns, sc)
+	}
+	picker := &loadbalance.Picker{}
+	picker.Build(buildInfo)
+	return picker, subConns
+}
 
 type subConn struct {
 	addrs []resolver.Address
 }
+
+func (s *subConn) UpdateAddresses(addrs []resolver.Address) {
+	s.addrs = addrs
+}
+
+func (s *subConn) Connect() {}
