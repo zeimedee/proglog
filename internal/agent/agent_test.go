@@ -14,6 +14,8 @@ import (
 	api "github.com/zeimedee/proglog/api/v1"
 	"github.com/zeimedee/proglog/internal/agent"
 	"github.com/zeimedee/proglog/internal/config"
+	"github.com/zeimedee/proglog/internal/loadbalance"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	// "google.golang.org/grpc/status"
@@ -138,7 +140,11 @@ func client(t *testing.T,
 	rpcAddr, err := agent.Config.RPCAddr()
 	require.NoError(t, err)
 
-	conn, err := grpc.Dial(rpcAddr, opts...)
+	conn, err := grpc.Dial(fmt.Sprintf(
+		"%s:///%s",
+		loadbalance.Name,
+		rpcAddr,
+	), opts...)
 	require.NoError(t, err)
 	client := api.NewLogClient(conn)
 	return client
