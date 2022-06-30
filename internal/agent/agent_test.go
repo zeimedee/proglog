@@ -86,6 +86,9 @@ func TestAgent(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+
+	time.Sleep(3 * time.Second)
+
 	consumeResponse, err := leaderClient.Consume(
 		context.Background(),
 		&api.ConsumeRequest{
@@ -134,7 +137,8 @@ func TestAgent(t *testing.T) {
 
 func client(t *testing.T,
 	agent *agent.Agent,
-	tlsConfig *tls.Config) api.LogClient {
+	tlsConfig *tls.Config,
+) api.LogClient {
 	tlsCreds := credentials.NewTLS(tlsConfig)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(tlsCreds)}
 	rpcAddr, err := agent.Config.RPCAddr()

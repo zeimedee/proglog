@@ -115,7 +115,7 @@ func (a *Agent) setupLog() error {
 	logConfig.Raft.StreamLayer = log.NewStreamLayer(
 		raftln,
 		a.Config.ServerTLSConfig,
-		a.Config.ServerTLSConfig,
+		a.Config.PeerTLSConfig,
 	)
 	logConfig.Raft.LocalID = raft.ServerID(a.Config.NodeName)
 	logConfig.Raft.Bootstrap = a.Config.Bootstrap

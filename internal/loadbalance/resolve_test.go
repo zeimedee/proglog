@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/serviceconfig"
 )
 
-func TestResolve(t *testing.T) {
-	l, err := net.Listen("tcp", "127.0.0.1")
+func TestResolver(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 
 	tlsConfig, err := config.SetupTLSConfig(config.TLSConfig{
